@@ -14,7 +14,9 @@
 
 <p class="lede">
   RecurTrack keeps your payment records on your phone. We never see what you track, who
-  you split with, or how much you pay. We never hold, receive, or move your money.
+  you split with, or how much you pay, and we never hold, receive, or move your money. The
+  one exception is cloud backup, a Plus feature that is off by default — see “Cloud backup”
+  below.
 </p>
 
 <h2>Who we are</h2>
@@ -117,8 +119,8 @@
 <p>
   Because Firebase and RevenueCat operate globally, your email address and account
   identifier may be stored and processed on servers outside India. We disclose this under
-  the DPDP Act. Your payment records themselves never leave your device, so they are never
-  transferred anywhere.
+  the DPDP Act. Unless you turn on cloud backup (below), your payment records never leave
+  your device.
 </p>
 
 <h2>Money, and what we are not</h2>
@@ -128,6 +130,37 @@
   app. The payment happens directly between you and them through the UPI network. We are not
   a payment aggregator, payment gateway or money transmitter, we take no cut of any payment,
   and we have no visibility into whether a payment succeeded.
+</p>
+
+<h2>Cloud backup (Plus, opt-in)</h2>
+<p>
+  RecurTrack Plus includes an optional cloud backup so you can restore your payments on a
+  new phone. <strong>It is off by default.</strong> Nothing is uploaded unless you turn it
+  on and tap “Back up now”.
+</p>
+<p>
+  When you do, a copy of your payments, people, splits and settlement history is stored in
+  Google Firebase (Firestore), in the Mumbai (India) region, encrypted in transit. It is
+  readable only by your own account — our security rules make one user's backup unreadable
+  to anyone else. Deleting your account removes it. We never see the contents as usable
+  data, and this backup is never used for anything but restoring your own device.
+</p>
+<p>
+  If you never enable backup, this section does not apply to you and your data stays on your
+  phone as described above.
+</p>
+
+<h2>Household sharing (Plus, opt-in)</h2>
+<p>
+  If you start or join a household, the payments you choose to share are stored in the same
+  Firebase region and become readable by the other people in that household. Only they can
+  read it — our rules restrict a household to its own members — but this is the one feature
+  where your payment records are visible to another person, by design.
+</p>
+<p>
+  You control it: nothing is shared until you tap “Share my changes”, and leaving a
+  household stops it. Anyone holding your invite code can join, so treat it like a password
+  and only send it to people you intend to share with.
 </p>
 
 <h2>How long we keep things</h2>
