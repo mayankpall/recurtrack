@@ -3,26 +3,718 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>RecurTrack</title>
-<link rel="stylesheet" href="./_style.css">
+<title>RecurTrack — every rupee that leaves on repeat</title>
+<meta name="description" content="Track the subscriptions and bills you pay every month, and get back what your flatmates owe you — over UPI, in one tap. Your records never leave your phone.">
+<meta name="theme-color" content="#0A0A0B">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23C6F24E'/><text y='72' x='50' font-size='64' font-weight='bold' text-anchor='middle' font-family='Georgia,serif' fill='%230A0A0B'>₹</text></svg>">
+
+<meta property="og:title" content="RecurTrack — every rupee that leaves on repeat">
+<meta property="og:description" content="Track what you pay every month, and get back what your flatmates owe you. Over UPI, in one tap.">
+<meta property="og:type" content="website">
+
+<style>
+:root{
+  --bg:#0A0A0B; --surface:#141416; --surface-2:#1C1C1F; --hairline:#26262A;
+  --text:#FAFAFA; --muted:#8A8A92; --faint:#5A5A62;
+  --lime:#C6F24E; --lime-dim:#232B14; --ink:#0A0A0B;
+  --green:#4ADE80; --amber:#FBBF24; --red:#FB7185;
+  --serif:Georgia,'Times New Roman',serif;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  --max:1080px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{
+  background:var(--bg);color:var(--text);font-family:var(--sans);
+  line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+}
+a{color:inherit}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 24px}
+
+/* ---------- scroll progress ---------- */
+#progress{
+  position:fixed;top:0;left:0;height:2px;width:100%;transform-origin:0 50%;
+  transform:scaleX(0);background:var(--lime);z-index:100;
+}
+
+/* ---------- nav ---------- */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:90;
+  padding:16px 0;transition:background .3s ease,backdrop-filter .3s ease,border-color .3s ease;
+  border-bottom:1px solid transparent;
+}
+nav.stuck{background:rgba(10,10,11,.72);backdrop-filter:blur(14px);border-bottom-color:var(--hairline)}
+nav .wrap{display:flex;align-items:center;gap:16px}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--serif);font-size:19px;font-weight:600;text-decoration:none}
+.mark{
+  width:30px;height:30px;border-radius:8px;background:var(--lime);color:var(--ink);
+  display:grid;place-items:center;font-family:var(--serif);font-weight:700;font-size:17px;
+}
+.nav-links{margin-left:auto;display:flex;gap:24px;font-size:14px;color:var(--muted)}
+.nav-links a{text-decoration:none;transition:color .2s}
+.nav-links a:hover{color:var(--text)}
+@media(max-width:640px){.nav-links{display:none}}
+
+/* ---------- reveal ---------- */
+.reveal{opacity:0;transform:translateY(26px);transition:opacity .7s cubic-bezier(.2,.7,.3,1),transform .7s cubic-bezier(.2,.7,.3,1)}
+.reveal.in{opacity:1;transform:none}
+.reveal[data-d="1"]{transition-delay:.08s}
+.reveal[data-d="2"]{transition-delay:.16s}
+.reveal[data-d="3"]{transition-delay:.24s}
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .reveal{opacity:1;transform:none;transition:none}
+  #progress{display:none}
+}
+
+/* ---------- hero ---------- */
+header{padding:150px 0 90px;position:relative;overflow:hidden}
+header::before{
+  content:'';position:absolute;top:-280px;left:50%;transform:translateX(-50%);
+  width:820px;height:620px;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle,rgba(198,242,78,.10),transparent 68%);
+}
+.hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center;position:relative}
+@media(max-width:900px){.hero-grid{grid-template-columns:1fr;gap:48px}}
+.eyebrow{
+  display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;
+  letter-spacing:.09em;text-transform:uppercase;color:var(--lime);
+  background:var(--lime-dim);border:1px solid rgba(198,242,78,.22);
+  padding:6px 12px;border-radius:99px;margin-bottom:22px;
+}
+h1{
+  font-family:var(--serif);font-weight:600;font-size:clamp(40px,6.4vw,68px);
+  line-height:1.04;letter-spacing:-.025em;text-wrap:balance;
+}
+h1 em{font-style:normal;color:var(--lime)}
+.sub{margin-top:20px;font-size:clamp(16px,2.1vw,19px);color:var(--muted);max-width:33ch;line-height:1.55}
+.cta{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-top:34px}
+.btn{
+  display:inline-flex;align-items:center;gap:9px;background:var(--lime);color:var(--ink);
+  font-weight:700;font-size:15px;padding:14px 24px;border-radius:99px;text-decoration:none;
+  transition:transform .2s cubic-bezier(.2,.7,.3,1),box-shadow .2s;
+  box-shadow:0 8px 30px -10px rgba(198,242,78,.5);
+}
+.btn:hover{transform:translateY(-2px);box-shadow:0 14px 38px -10px rgba(198,242,78,.62)}
+.btn.ghost{background:transparent;color:var(--text);border:1px solid var(--hairline);box-shadow:none}
+.btn.ghost:hover{border-color:var(--faint);transform:translateY(-2px)}
+.cta-note{font-size:13px;color:var(--faint)}
+
+/* ---------- phone ---------- */
+.phone-wrap{display:flex;justify-content:center;perspective:1400px}
+.phone{
+  width:296px;flex:0 0 296px;background:#000;border-radius:44px;padding:10px;
+  border:1px solid #2a2a2e;position:relative;
+  box-shadow:0 50px 100px -34px rgba(0,0,0,.95), 0 0 0 1px rgba(255,255,255,.04) inset;
+}
+.phone::after{content:'';position:absolute;top:20px;left:50%;transform:translateX(-50%);width:88px;height:22px;background:#000;border-radius:99px;z-index:5}
+.screen{background:var(--bg);border-radius:35px;overflow:hidden;height:592px;position:relative}
+.screen-inner{padding:38px 17px 0;font-size:11px}
+
+/* app chrome */
+.a-top{display:flex;align-items:center;margin-bottom:16px}
+.a-greet{font-size:9.5px;color:var(--muted);font-weight:600}
+.a-name{font-family:var(--serif);font-size:14px;font-weight:600;margin-top:1px}
+.a-actions{margin-left:auto;display:flex;gap:6px}
+.a-add{width:25px;height:25px;border-radius:50%;background:var(--lime);color:var(--ink);display:grid;place-items:center;font-size:15px;font-weight:600;line-height:1}
+.a-av{width:25px;height:25px;border-radius:50%;background:var(--surface-2);display:grid;place-items:center;font-size:8.5px;font-weight:800;color:var(--muted)}
+.a-label{font-size:7.5px;font-weight:800;letter-spacing:.1em;color:var(--faint)}
+.a-hero{display:flex;align-items:center;gap:14px}
+.a-big{font-size:34px;font-weight:800;letter-spacing:-1.2px;line-height:1;margin-top:3px;font-variant-numeric:tabular-nums}
+.a-subtle{font-size:9px;color:var(--muted);margin-top:5px}
+.ring{width:62px;height:62px;flex:0 0 62px}
+.a-legend{margin-top:16px;display:flex;flex-direction:column;gap:8px}
+.a-row{display:flex;align-items:center;gap:7px;font-size:9.5px}
+.dot{width:5px;height:5px;border-radius:50%;flex:0 0 5px}
+.a-row .nm{font-weight:600}
+.a-row .pc{margin-left:auto;color:var(--faint);font-size:8.5px}
+.a-row .amt{font-weight:700;font-variant-numeric:tabular-nums;min-width:44px;text-align:right}
+.a-strip{display:flex;align-items:center;gap:7px;background:var(--surface);border-radius:11px;padding:9px 11px;margin-top:14px;font-size:9.5px;color:var(--muted)}
+.a-strip b{color:var(--text);font-weight:800}
+.a-strip .chev{margin-left:auto;color:var(--faint)}
+.a-sec{font-family:var(--serif);font-size:11px;color:var(--muted);margin:16px 0 8px}
+.a-item{display:flex;align-items:center;gap:9px;padding:7px 0}
+.tile{width:27px;height:27px;border-radius:8px;display:grid;place-items:center;font-size:10px;font-weight:800;color:#fff}
+.a-item .t{font-size:10.5px;font-weight:600}
+.a-item .d{font-size:8.5px;color:var(--faint);margin-top:1px}
+.a-item .v{margin-left:auto;font-weight:700;font-size:10.5px;font-variant-numeric:tabular-nums}
+.pill{background:var(--lime);color:var(--ink);font-size:8px;font-weight:800;padding:3px 7px;border-radius:99px;margin-left:auto}
+.a-item .pill + .v{margin-left:7px}
+.a-tabs{position:absolute;bottom:0;left:0;right:0;display:flex;padding:9px 0 13px;border-top:1px solid var(--hairline);background:var(--bg)}
+.a-tab{flex:1;text-align:center;font-size:7.5px;color:var(--faint);font-weight:600}
+.a-tab.on{color:var(--lime)}
+.a-tab i{display:block;font-size:12px;margin-bottom:2px;font-style:normal}
+
+/* owed screen */
+.o-card{background:var(--surface);border-radius:13px;padding:12px;margin-top:12px}
+.o-top{display:flex;align-items:center;gap:9px}
+.o-av{width:29px;height:29px;border-radius:8px;display:grid;place-items:center;font-size:9px;font-weight:800;color:#fff}
+.o-nm{font-family:var(--serif);font-size:12px;font-weight:600}
+.o-due{font-size:8.5px;color:var(--muted);margin-top:1px}
+.o-amt{margin-left:auto;font-size:14px;font-weight:800;font-variant-numeric:tabular-nums}
+.o-habit{display:flex;align-items:center;gap:5px;margin-top:8px;font-size:8.5px;color:var(--faint)}
+.o-break{border-top:1px solid var(--hairline);margin-top:9px;padding-top:6px}
+.o-line{display:flex;font-size:9px;color:var(--muted);padding:3px 0}
+.o-line b{margin-left:auto;color:var(--text);font-variant-numeric:tabular-nums}
+.o-btn{background:var(--lime);color:var(--ink);text-align:center;font-size:10px;font-weight:800;padding:9px;border-radius:10px;margin-top:10px}
+.o-sec{text-align:center;font-size:8.5px;color:var(--muted);margin-top:8px}
+
+/* split screen */
+.s-card{background:var(--surface);border-radius:13px;padding:12px;margin-top:12px}
+.s-h{font-size:12px;font-weight:700}
+.s-modes{display:flex;gap:6px;margin-top:9px}
+.s-mode{font-size:8.5px;font-weight:700;padding:5px 10px;border-radius:99px;background:var(--surface-2);color:var(--muted)}
+.s-mode.on{background:#fff;color:#000}
+.s-note{font-size:8.5px;color:var(--faint);margin-top:8px}
+.s-person{display:flex;align-items:center;gap:8px;padding:8px 0}
+.s-person .v{margin-left:auto;font-size:11px;font-weight:800;font-variant-numeric:tabular-nums}
+.s-person .auto{font-size:7px;color:var(--faint);letter-spacing:.06em;display:block;text-align:right;margin-top:1px}
+.s-msg{background:var(--surface-2);border-radius:9px;padding:9px;font-size:8.5px;color:var(--muted);line-height:1.5;margin-top:9px}
+
+/* ---------- sections ---------- */
+section{padding:104px 0;position:relative}
+.kicker{font-size:12px;font-weight:800;letter-spacing:.11em;text-transform:uppercase;color:var(--lime);margin-bottom:14px}
+h2{font-family:var(--serif);font-weight:600;font-size:clamp(28px,4.3vw,46px);line-height:1.12;letter-spacing:-.02em;text-wrap:balance}
+.lead{margin-top:18px;font-size:17px;color:var(--muted);max-width:56ch;line-height:1.6}
+
+/* problem */
+.problem{border-top:1px solid var(--hairline);border-bottom:1px solid var(--hairline);background:linear-gradient(180deg,rgba(255,255,255,.014),transparent)}
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--hairline);border:1px solid var(--hairline);border-radius:16px;overflow:hidden;margin-top:46px}
+@media(max-width:760px){.stat-grid{grid-template-columns:1fr}}
+.stat{background:var(--bg);padding:30px 24px}
+.stat .n{font-family:var(--serif);font-size:38px;font-weight:600;letter-spacing:-.02em;color:var(--lime);line-height:1}
+.stat .t{margin-top:10px;font-size:14.5px;color:var(--muted);line-height:1.5}
+
+/* sticky feature scroll */
+.sticky-sec{position:relative}
+.sticky-grid{display:grid;grid-template-columns:1fr 340px;gap:70px;align-items:start}
+@media(max-width:900px){.sticky-grid{grid-template-columns:1fr;gap:40px}}
+.steps{display:flex;flex-direction:column;gap:0}
+.step{padding:88px 0;border-bottom:1px solid var(--hairline)}
+.step:last-child{border-bottom:0}
+@media(max-width:900px){.step{padding:52px 0}}
+.step .num{font-family:var(--serif);font-size:13px;color:var(--lime);margin-bottom:12px;letter-spacing:.06em}
+.step h3{font-family:var(--serif);font-size:clamp(24px,3.2vw,33px);font-weight:600;letter-spacing:-.015em;line-height:1.18}
+.step p{margin-top:14px;color:var(--muted);font-size:16px;max-width:46ch;line-height:1.62}
+.sticky-phone{position:sticky;top:118px;justify-self:center}
+/* Narrow screens get one phone per step instead of a pinned one. A phone
+   pinned to the top of a 375pt screen sits right across the reading column and
+   cuts every paragraph in half; inline, each screenshot simply sits with the
+   words it illustrates. The copies are cloned at runtime — see buildInline(). */
+@media(max-width:900px){
+  .sticky-grid{display:block}
+  .sticky-phone{display:none}
+}
+.step .phone{margin:26px auto 4px}
+@media(max-width:380px){
+  .step .phone{transform:scale(.86);transform-origin:top center;margin-bottom:-82px}
+}
+.screens{position:relative}
+.screens .phone{position:relative}
+.slide{position:absolute;inset:0;border-radius:35px;overflow:hidden;opacity:0;transition:opacity .55s ease;pointer-events:none}
+.slide.on{opacity:1;pointer-events:auto}
+
+/* privacy */
+.privacy{background:var(--surface);border-top:1px solid var(--hairline);border-bottom:1px solid var(--hairline)}
+.p-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:22px;margin-top:44px}
+.p-card{background:var(--bg);border:1px solid var(--hairline);border-radius:16px;padding:26px}
+.p-card .ic{width:36px;height:36px;border-radius:10px;background:var(--lime-dim);display:grid;place-items:center;margin-bottom:16px;font-size:17px}
+.p-card h4{font-size:16px;font-weight:700;margin-bottom:8px}
+.p-card p{font-size:14px;color:var(--muted);line-height:1.6}
+
+/* plus */
+.plus-box{
+  border:1px solid var(--hairline);border-radius:22px;padding:44px;margin-top:44px;
+  background:linear-gradient(160deg,rgba(198,242,78,.05),transparent 62%);
+}
+@media(max-width:640px){.plus-box{padding:28px}}
+.plus-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:26px;margin-top:30px}
+.plus-item h4{font-size:15.5px;font-weight:700;margin-bottom:7px;display:flex;align-items:center;gap:8px}
+.plus-item h4::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--lime);flex:0 0 6px}
+.plus-item p{font-size:14px;color:var(--muted);line-height:1.58}
+.free-note{margin-top:32px;padding-top:24px;border-top:1px solid var(--hairline);font-size:14.5px;color:var(--muted)}
+.free-note b{color:var(--text)}
+
+/* final */
+.final{text-align:center;padding:120px 0}
+.final h2{max-width:16ch;margin:0 auto}
+.final .lead{margin:18px auto 0;text-align:center}
+.final .cta{justify-content:center}
+
+/* footer */
+footer{border-top:1px solid var(--hairline);padding:44px 0;font-size:13.5px;color:var(--faint)}
+.f-grid{display:flex;flex-wrap:wrap;gap:18px;align-items:center}
+.f-links{margin-left:auto;display:flex;flex-wrap:wrap;gap:22px}
+.f-links a{text-decoration:none;transition:color .2s}
+.f-links a:hover{color:var(--text)}
+@media(max-width:640px){.f-links{margin-left:0}}
+</style>
 </head>
 <body>
-<main>
-<h1>RecurTrack</h1>
-<p class="updated">Every subscription and recurring bill in one place.</p>
-<p class="lede">
-  RecurTrack tracks what you pay every month and gives you a one-tap way to collect
-  everyone's share. Your records stay on your phone, and the app never holds or moves
-  your money.
-</p>
-<h2>Legal</h2>
-<ul>
-  <li><a href="./privacy.html">Privacy Policy</a></li>
-  <li><a href="./terms.html">Terms of Use</a></li>
-</ul>
-<h2>Support</h2>
-<p>Email <a href="mailto:support@mayankpal.co.in">support@mayankpal.co.in</a> and we will reply within a couple of days.</p>
-<footer>© 2026 Mayank Pal, India.</footer>
-</main>
+
+<div id="progress"></div>
+
+<nav id="nav">
+  <div class="wrap">
+    <a class="brand" href="#top"><span class="mark">₹</span> RecurTrack</a>
+    <div class="nav-links">
+      <a href="#how">How it works</a>
+      <a href="#privacy">Privacy</a>
+      <a href="#plus">Plus</a>
+    </div>
+  </div>
+</nav>
+
+<header id="top">
+  <div class="wrap hero-grid">
+    <div>
+      <div class="eyebrow reveal">Built for India · UPI</div>
+      <h1 class="reveal" data-d="1">Every rupee that leaves <em>on repeat</em>.</h1>
+      <p class="sub reveal" data-d="2">
+        Rent, Netflix, the gym, the maid. RecurTrack keeps the whole list, reminds you
+        before each one lands — and gets back what your flatmates owe you, over UPI, in
+        one tap.
+      </p>
+      <div class="cta reveal" data-d="3">
+        <a class="btn" href="#how">See how it works</a>
+        <a class="btn ghost" href="#privacy">Why it never sees your bank</a>
+      </div>
+      <p class="cta-note reveal" data-d="3" style="margin-top:18px">
+        Coming to the App Store. iPhone first.
+      </p>
+    </div>
+
+    <div class="phone-wrap reveal" data-d="2">
+      <div class="phone">
+        <div class="screen">
+          <div class="screen-inner">
+            <div class="a-top">
+              <div>
+                <div class="a-greet">Good evening</div>
+                <div class="a-name">Mayank</div>
+              </div>
+              <div class="a-actions"><div class="a-add">+</div><div class="a-av">MP</div></div>
+            </div>
+
+            <div class="a-label">THIS MONTH</div>
+            <div class="a-hero">
+              <div style="flex:1">
+                <div class="a-big">₹31,841</div>
+                <div class="a-subtle">₹3,82,092 a year · 7 payments</div>
+              </div>
+              <svg class="ring" viewBox="0 0 42 42" aria-hidden="true">
+                <circle cx="21" cy="21" r="15.9" fill="none" stroke="#1C1C1F" stroke-width="6"/>
+                <circle cx="21" cy="21" r="15.9" fill="none" stroke="#E8A33D" stroke-width="6"
+                        stroke-dasharray="79 21" stroke-dashoffset="25"/>
+                <circle cx="21" cy="21" r="15.9" fill="none" stroke="#E5484D" stroke-width="6"
+                        stroke-dasharray="9 91" stroke-dashoffset="-54"/>
+                <circle cx="21" cy="21" r="15.9" fill="none" stroke="#3DBE8B" stroke-width="6"
+                        stroke-dasharray="6 94" stroke-dashoffset="-63"/>
+                <circle cx="21" cy="21" r="15.9" fill="none" stroke="#4C7EF3" stroke-width="6"
+                        stroke-dasharray="6 94" stroke-dashoffset="-69"/>
+              </svg>
+            </div>
+
+            <div class="a-legend">
+              <div class="a-row"><span class="dot" style="background:#E8A33D"></span><span class="nm">Rent</span><span class="pc">79%</span><span class="amt">₹25,000</span></div>
+              <div class="a-row"><span class="dot" style="background:#E5484D"></span><span class="nm">House help</span><span class="pc">9%</span><span class="amt">₹3,000</span></div>
+              <div class="a-row"><span class="dot" style="background:#3DBE8B"></span><span class="nm">ChatGPT Plus</span><span class="pc">6%</span><span class="amt">₹1,999</span></div>
+              <div class="a-row"><span class="dot" style="background:#4C7EF3"></span><span class="nm">Airtel Fiber</span><span class="pc">3%</span><span class="amt">₹999</span></div>
+            </div>
+
+            <div class="a-strip"><span class="dot" style="background:var(--amber)"></span><b>₹30,767</b> due in the next 7 days</div>
+            <div class="a-strip"><span class="dot" style="background:var(--lime)"></span>To collect from friends<b style="margin-left:auto">₹12,716</b><span class="chev">›</span></div>
+
+            <div class="a-sec">Due soon</div>
+            <div class="a-item">
+              <div class="tile" style="background:#E5484D">N</div>
+              <div><div class="t">Netflix</div><div class="d">Due tomorrow · auto</div></div>
+              <div class="v">₹649</div>
+            </div>
+            <div class="a-item">
+              <div class="tile" style="background:#D6436E">HH</div>
+              <div><div class="t">House help</div><div class="d">Due in 2 days</div></div>
+              <div class="pill">✓ Paid</div><div class="v">₹3,000</div>
+            </div>
+          </div>
+          <div class="a-tabs">
+            <div class="a-tab on"><i>⌂</i>Home</div>
+            <div class="a-tab"><i>▦</i>Calendar</div>
+            <div class="a-tab"><i>↓</i>Owed</div>
+            <div class="a-tab"><i>⚙</i>Settings</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="problem">
+  <div class="wrap">
+    <div class="kicker reveal">The quiet leak</div>
+    <h2 class="reveal" data-d="1">Recurring money is the money nobody watches.</h2>
+    <p class="lead reveal" data-d="2">
+      It leaves on its own schedule, in amounts small enough to ignore, from an account you
+      only check when something feels wrong. And the share your flatmate owes you? That is
+      a conversation nobody wants to start twice.
+    </p>
+    <div class="stat-grid">
+      <div class="stat reveal"><div class="n">₹3.8L</div><div class="t">What a fairly ordinary Indian household commits to recurring payments in a year.</div></div>
+      <div class="stat reveal" data-d="1"><div class="n">20M+</div><div class="t">UPI AutoPay mandates that fail every month, most simply because the balance was short.</div></div>
+      <div class="stat reveal" data-d="2"><div class="n">₹15,000</div><div class="t">The RBI cap above which an auto-debit needs your approval every single cycle.</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="how" class="sticky-sec">
+  <div class="wrap">
+    <div class="kicker reveal">How it works</div>
+    <h2 class="reveal" data-d="1">Three things, done properly.</h2>
+
+    <div class="sticky-grid" style="margin-top:48px">
+      <div class="steps">
+        <div class="step" data-slide="0">
+          <div class="num">01</div>
+          <h3>Everything you pay, in one list</h3>
+          <p>
+            Tap a service and it fills in the price, the cycle and how it debits — Netflix is
+            three taps, not a form. Rent, the maid, the newspaper and the gym sit in the same
+            list, because your money does not care which is a subscription.
+          </p>
+          <p>
+            A reminder lands before each one, and anything on AutoPay rolls its own cycle
+            forward. You are never asked to confirm a payment your bank already made.
+          </p>
+        </div>
+
+        <div class="step" data-slide="1">
+          <div class="num">02</div>
+          <h3>Split it without the awkward conversation</h3>
+          <p>
+            Add whoever shares it and RecurTrack works out each person's rupee share. Type one
+            amount and everyone you have not touched rebalances around it — the way you would
+            expect, not the way spreadsheets do it.
+          </p>
+          <p>
+            Then it writes the message for you. Five tones, from breezy to firm, because asking
+            your mother is not asking your flatmate.
+          </p>
+        </div>
+
+        <div class="step" data-slide="2">
+          <div class="num">03</div>
+          <h3>Get the money back, over UPI</h3>
+          <p>
+            One tap sends a request with a UPI deep link attached. They open it, approve it in
+            their own app, and the money goes straight from their bank to yours.
+          </p>
+          <p>
+            Owed groups by person, not by bill — one total, one ask, however many things they
+            are in on. And it tells you who actually pays on time.
+          </p>
+        </div>
+      </div>
+
+      <div class="sticky-phone">
+        <div class="screens">
+          <div class="phone">
+            <div class="screen">
+
+              <!-- 1: list -->
+              <div class="slide on" data-i="0">
+                <div class="screen-inner">
+                  <div class="a-label" style="margin-bottom:9px">QUICK ADD</div>
+                  <div style="display:flex;gap:7px;margin-bottom:16px">
+                    <div style="flex:1;background:var(--surface);border:1px solid var(--lime);border-radius:10px;padding:9px">
+                      <div class="tile" style="background:#E5484D;width:22px;height:22px;font-size:9px;margin-bottom:6px">N</div>
+                      <div style="font-size:9.5px;font-weight:700;color:var(--lime)">Netflix</div>
+                      <div style="font-size:8px;color:var(--faint)">₹499</div>
+                    </div>
+                    <div style="flex:1;background:var(--surface);border:1px solid transparent;border-radius:10px;padding:9px">
+                      <div class="tile" style="background:#1DB954;width:22px;height:22px;font-size:9px;margin-bottom:6px">S</div>
+                      <div style="font-size:9.5px;font-weight:700">Spotify</div>
+                      <div style="font-size:8px;color:var(--faint)">₹119</div>
+                    </div>
+                    <div style="flex:1;background:var(--surface);border-radius:10px;padding:9px">
+                      <div class="tile" style="background:#E8A33D;width:22px;height:22px;font-size:9px;margin-bottom:6px">R</div>
+                      <div style="font-size:9.5px;font-weight:700">Rent</div>
+                      <div style="font-size:8px;color:var(--faint)">₹25,000</div>
+                    </div>
+                  </div>
+                  <div class="a-sec" style="margin-top:4px">Due soon</div>
+                  <div class="a-item"><div class="tile" style="background:#E5484D">N</div><div><div class="t">Netflix</div><div class="d">Due tomorrow · auto</div></div><div class="v">₹649</div></div>
+                  <div class="a-item"><div class="tile" style="background:#D6436E">HH</div><div><div class="t">House help</div><div class="d">Due in 2 days</div></div><div class="pill">✓ Paid</div><div class="v">₹3,000</div></div>
+                  <div class="a-item"><div class="tile" style="background:#3DBE8B">CP</div><div><div class="t">ChatGPT Plus</div><div class="d">Due in 3 days · auto</div></div><div class="v">₹1,999</div></div>
+                  <div class="a-item"><div class="tile" style="background:#E8A33D">R</div><div><div class="t">Rent</div><div class="d">Due in 4 days</div></div><div class="pill">✓ Paid</div><div class="v">₹25,000</div></div>
+                  <div class="a-item"><div class="tile" style="background:#1DB954">S</div><div><div class="t">Spotify</div><div class="d">Due in 6 days · auto</div></div><div class="v">₹119</div></div>
+                </div>
+                  <div class="a-tabs">
+                  <div class="a-tab on"><i>⌂</i>Home</div>
+                  <div class="a-tab"><i>▦</i>Calendar</div>
+                  <div class="a-tab"><i>↓</i>Owed</div>
+                  <div class="a-tab"><i>⚙</i>Settings</div>
+                  </div>
+              </div>
+
+              <!-- 2: split -->
+              <div class="slide" data-i="1">
+                <div class="screen-inner">
+                  <div style="font-family:var(--serif);font-size:13px;font-weight:600;margin-bottom:4px">Split Flat rent</div>
+                  <div class="s-card">
+                    <div class="s-h">₹25,000 across 4</div>
+                    <div class="s-modes"><div class="s-mode">Split equally</div><div class="s-mode on">Custom amounts</div></div>
+                    <div class="s-note">₹18,750 assigned · you cover ₹6,250</div>
+                    <div class="s-note" style="color:var(--lime);font-weight:700">Reset 1 set amount</div>
+                  </div>
+                  <div class="s-card">
+                    <div class="s-person">
+                      <div class="o-av" style="background:#D6436E">AS</div>
+                      <div><div class="o-nm" style="font-size:11px">Aditi</div></div>
+                      <div style="margin-left:auto;display:flex;align-items:center;gap:5px">
+                        <div style="background:var(--surface-2);border:1px solid var(--lime);border-radius:7px;padding:4px 9px;font-size:10px;font-weight:800">₹10,000</div>
+                        <span style="color:var(--lime);font-size:10px">🔒</span>
+                      </div>
+                    </div>
+                    <div class="s-person">
+                      <div class="o-av" style="background:#7C5CE0">RM</div>
+                      <div><div class="o-nm" style="font-size:11px">Rohan</div></div>
+                      <div style="margin-left:auto;text-align:right"><div class="v">₹4,375</div><span class="auto">AUTO</span></div>
+                    </div>
+                    <div class="s-person">
+                      <div class="o-av" style="background:#4C7EF3">VK</div>
+                      <div><div class="o-nm" style="font-size:11px">Vikram</div></div>
+                      <div style="margin-left:auto;text-align:right"><div class="v">₹4,375</div><span class="auto">AUTO</span></div>
+                    </div>
+                    <div class="s-msg">
+                      Hey Aditi! Flat rent came around again — your bit is ₹10,000, due in 3 days.<br><br>
+                      Whenever you get a sec: upi://pay?…
+                    </div>
+                  </div>
+                  <div class="o-btn">Save split</div>
+                  <div class="o-sec">Ask all 3 on WhatsApp</div>
+                </div>
+                  <div class="a-tabs">
+                  <div class="a-tab on"><i>⌂</i>Home</div>
+                  <div class="a-tab"><i>▦</i>Calendar</div>
+                  <div class="a-tab"><i>↓</i>Owed</div>
+                  <div class="a-tab"><i>⚙</i>Settings</div>
+                  </div>
+              </div>
+
+              <!-- 3: owed -->
+              <div class="slide" data-i="2">
+                <div class="screen-inner">
+                  <div style="font-family:var(--serif);font-size:14px;font-weight:600;margin-bottom:14px">Owed</div>
+                  <div class="a-label">OUTSTANDING</div>
+                  <div class="a-big" style="font-size:30px">₹13,265</div>
+                  <div class="a-subtle">from 2 people</div>
+                  <div class="o-btn" style="margin-top:14px">Remind everyone</div>
+
+                  <div class="o-card">
+                    <div class="o-top">
+                      <div class="o-av" style="background:#D6436E">AS</div>
+                      <div><div class="o-nm">Aditi Sharma</div><div class="o-due">Due tomorrow</div></div>
+                      <div class="o-amt">₹12,716</div>
+                    </div>
+                    <div class="o-habit"><span class="dot" style="background:var(--green)"></span>Pays about 2 days after you ask</div>
+                    <div class="o-break">
+                      <div class="o-line">Netflix <b>₹216</b></div>
+                      <div class="o-line">Rent <b>₹12,500</b></div>
+                    </div>
+                    <div class="o-btn">Ask on WhatsApp</div>
+                    <div class="o-sec">Mark ₹12,716 received</div>
+                  </div>
+
+                  <div class="o-card">
+                    <div class="o-top">
+                      <div class="o-av" style="background:#7C5CE0">RM</div>
+                      <div><div class="o-nm">Rohan Mehta</div><div class="o-due">Due tomorrow · asked</div></div>
+                      <div class="o-amt">₹549</div>
+                    </div>
+                    <div class="o-habit"><span class="dot" style="background:var(--red)"></span>Missed 2 of 3 cycles</div>
+                  </div>
+                </div>
+                  <div class="a-tabs">
+                  <div class="a-tab"><i>⌂</i>Home</div>
+                  <div class="a-tab"><i>▦</i>Calendar</div>
+                  <div class="a-tab on"><i>↓</i>Owed</div>
+                  <div class="a-tab"><i>⚙</i>Settings</div>
+                  </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="privacy" class="privacy">
+  <div class="wrap">
+    <div class="kicker reveal">Privacy</div>
+    <h2 class="reveal" data-d="1">It never connects to your bank. That is the design, not a setting.</h2>
+    <p class="lead reveal" data-d="2">
+      Most money apps start by asking for read access to your account. RecurTrack cannot,
+      because it never holds, receives or moves a rupee. Payments go straight between two
+      UPI apps, and we take no cut and see no balance.
+    </p>
+    <div class="p-grid">
+      <div class="p-card reveal">
+        <div class="ic">📱</div>
+        <h4>Your records stay on your phone</h4>
+        <p>Payments, people and splits live in a database on your device. Not on a server, not in an analytics pipeline.</p>
+      </div>
+      <div class="p-card reveal" data-d="1">
+        <div class="ic">🔗</div>
+        <h4>No bank connection, ever</h4>
+        <p>No account linking, no transaction scraping, no read access. We could not look at your balance if we wanted to.</p>
+      </div>
+      <div class="p-card reveal" data-d="2">
+        <div class="ic">👤</div>
+        <h4>An account is optional</h4>
+        <p>Start without one. Add an email later only if you want to get your list back on a new phone — it keeps everything.</p>
+      </div>
+      <div class="p-card reveal" data-d="3">
+        <div class="ic">☁️</div>
+        <h4>Backup is off until you say so</h4>
+        <p>Cloud backup and household sharing are opt-in. Nothing leaves the phone unless you switch them on, and the policy says exactly what happens when you do.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="plus">
+  <div class="wrap">
+    <div class="kicker reveal">RecurTrack Plus</div>
+    <h2 class="reveal" data-d="1">The free app is the whole app.</h2>
+    <p class="lead reveal" data-d="2">
+      Tracking, splitting, asking people to pay, reminders, low-balance and mandate-cap
+      warnings — all free, permanently. Plus is for the parts that cost us something to run,
+      or that save you the work of remembering.
+    </p>
+
+    <div class="plus-box reveal" data-d="2">
+      <div class="plus-list">
+        <div class="plus-item"><h4>Backup &amp; restore</h4><p>Every payment back on a new phone. Off by default.</p></div>
+        <div class="plus-item"><h4>Share with your household</h4><p>One list you and a flatmate or partner both see.</p></div>
+        <div class="plus-item"><h4>Automatic chase-ups</h4><p>It remembers who still owes, and nudges you — escalating, not repeating.</p></div>
+        <div class="plus-item"><h4>Who actually pays</h4><p>How long each person really takes, and who needs asking twice.</p></div>
+      </div>
+      <div class="free-note">
+        <b>What stays free, always:</b> unlimited payments, unlimited people, unlimited splits and
+        folders, every reminder, and the warnings that stop a mandate bouncing. We do not think
+        it is right to charge for telling you that you are about to lose money.
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="final">
+  <div class="wrap">
+    <h2 class="reveal">Stop guessing where it goes.</h2>
+    <p class="lead reveal" data-d="1">
+      RecurTrack is finishing review and heading to the App Store. iPhone first.
+    </p>
+    <div class="cta reveal" data-d="2">
+      <a class="btn" href="mailto:support@mayankpal.co.in?subject=Tell%20me%20when%20RecurTrack%20launches">Tell me when it launches</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap f-grid">
+    <div>© 2026 Mayank Pal · Made in India</div>
+    <div class="f-links">
+      <a href="privacy.html">Privacy Policy</a>
+      <a href="terms.html">Terms of Use</a>
+      <a href="mailto:support@mayankpal.co.in">Support</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Scroll progress. Transform only, so it never triggers layout.
+  var bar = document.getElementById('progress');
+  var nav = document.getElementById('nav');
+  var ticking = false;
+  function onScroll() {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(function () {
+      var h = document.documentElement.scrollHeight - window.innerHeight;
+      if (bar && !reduce) bar.style.transform = 'scaleX(' + (h > 0 ? window.scrollY / h : 0) + ')';
+      nav.classList.toggle('stuck', window.scrollY > 24);
+      ticking = false;
+    });
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  // Reveal on entry. Unobserved once shown — re-animating on the way back up is
+  // the thing that makes scroll effects feel cheap.
+  var els = document.querySelectorAll('.reveal');
+  if (reduce || !('IntersectionObserver' in window)) {
+    els.forEach(function (el) { el.classList.add('in'); });
+  } else {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        e.target.classList.add('in');
+        io.unobserve(e.target);
+      });
+    }, { rootMargin: '0px 0px -12% 0px', threshold: 0.08 });
+    els.forEach(function (el) { io.observe(el); });
+  }
+
+  var steps = [].slice.call(document.querySelectorAll('.step'));
+  var stack = document.querySelector('.sticky-phone .phone');
+
+  // Below 900px each step carries its own phone, cloned from the stacked one.
+  var inlined = false;
+  function buildInline() {
+    if (inlined || window.innerWidth > 900 || !stack) return;
+    inlined = true;
+    steps.forEach(function (step) {
+      var i = +step.getAttribute('data-slide');
+      var phone = stack.cloneNode(true);
+      [].slice.call(phone.querySelectorAll('.slide')).forEach(function (sl, j) {
+        if (j === i) sl.classList.add('on'); else sl.remove();
+      });
+      step.insertBefore(phone, step.querySelector('h3').nextSibling);
+    });
+  }
+  buildInline();
+  window.addEventListener('resize', buildInline);
+
+  // Above 900px the phone is pinned beside the text, and shows whichever step
+  // has reached the reading line — not the nearest centre, which flips early
+  // when one step is much taller than its neighbour.
+  var slides = [].slice.call(document.querySelectorAll('.sticky-phone .slide'));
+  if (steps.length && slides.length) {
+    var current = -1;
+    function pick() {
+      if (window.innerWidth <= 900) return;
+      var line = window.innerHeight * 0.42, best = 0;
+      steps.forEach(function (s, i) {
+        if (s.getBoundingClientRect().top <= line) best = i;
+      });
+      if (best === current) return;
+      current = best;
+      slides.forEach(function (sl, i) { sl.classList.toggle('on', i === best); });
+    }
+    var t2 = false;
+    window.addEventListener('scroll', function () {
+      if (t2) return;
+      t2 = true;
+      requestAnimationFrame(function () { pick(); t2 = false; });
+    }, { passive: true });
+    pick();
+  }
+})();
+</script>
 </body>
 </html>

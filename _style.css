@@ -1,18 +1,43 @@
-:root{--ink:#14181f;--ink2:#454f5d;--paper:#fff;--rule:#e3e7ed;--link:#0b5fbf}
-@media(prefers-color-scheme:dark){:root{--ink:#e9edf3;--ink2:#a7b1be;--paper:#0e1116;--rule:#242b34;--link:#7ab4ff}}
+/* Shared styling for privacy.html and terms.html.
+   Presentation only — these pages are linked from App Store Connect, so their
+   wording is never changed here. Palette and type match the landing page. */
+:root{
+  --bg:#0A0A0B; --surface:#141416; --rule:#26262A;
+  --ink:#FAFAFA; --ink2:#9A9AA2; --link:#C6F24E;
+  --serif:Georgia,'Times New Roman',serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
 *{box-sizing:border-box}
-body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font:16px/1.7 var(--sans);-webkit-font-smoothing:antialiased;
+}
+.sitebar{border-bottom:1px solid var(--rule);padding:16px 1.25rem}
+.sitebar a.brand{
+  display:inline-flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);
+  font-family:var(--serif);font-size:18px;font-weight:600;
+  max-width:44rem;margin:0 auto;
+}
+.sitebar .inner{max-width:44rem;margin:0 auto}
+.sitebar .mark{
+  width:28px;height:28px;border-radius:8px;background:var(--link);color:var(--bg);
+  display:grid;place-items:center;font-family:var(--serif);font-weight:700;font-size:16px;
+}
 main{max-width:44rem;margin:0 auto;padding:3rem 1.25rem 6rem}
-h1{font-size:2rem;line-height:1.15;margin:0 0 .35rem;letter-spacing:-.02em}
-.updated{color:var(--ink2);font-size:.9rem;margin:0 0 2.5rem}
-h2{font-size:1.15rem;margin:2.5rem 0 .6rem;letter-spacing:-.01em}
-h3{font-size:1rem;margin:1.75rem 0 .4rem}
+h1{font-family:var(--serif);font-weight:600;font-size:2.2rem;line-height:1.12;margin:0 0 .35rem;letter-spacing:-.02em}
+.updated{color:#5A5A62;font-size:.9rem;margin:0 0 2.5rem}
+h2{font-family:var(--serif);font-weight:600;font-size:1.3rem;margin:2.75rem 0 .6rem;letter-spacing:-.01em}
+h3{font-size:1rem;margin:1.75rem 0 .4rem;font-weight:700}
 p,li{color:var(--ink2)}
-li{margin-bottom:.4rem}
-strong{color:var(--ink)}
+li{margin-bottom:.45rem}
+strong{color:var(--ink);font-weight:700}
 a{color:var(--link)}
-table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.94rem;display:block;overflow-x:auto}
-th,td{text-align:left;padding:.6rem .7rem;border-bottom:1px solid var(--rule);vertical-align:top}
+a:hover{text-decoration:none}
+table{width:100%;border-collapse:collapse;margin:1.15rem 0;font-size:.94rem;display:block;overflow-x:auto}
+th,td{text-align:left;padding:.65rem .7rem;border-bottom:1px solid var(--rule);vertical-align:top}
 th{color:var(--ink);font-size:.78rem;text-transform:uppercase;letter-spacing:.06em}
-.lede{color:var(--ink);font-size:1.06rem;border-left:3px solid var(--rule);padding-left:1rem}
+.lede{
+  color:var(--ink);font-size:1.06rem;background:var(--surface);
+  border-left:3px solid var(--link);padding:1rem 1.15rem;border-radius:0 10px 10px 0;
+}
 footer{margin-top:4rem;padding-top:1.25rem;border-top:1px solid var(--rule);font-size:.87rem;color:var(--ink2)}
